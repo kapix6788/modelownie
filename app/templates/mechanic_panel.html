@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2>Panel Mechanika</h2>
+        <p class="text-muted">Zalogowany jako: <strong>{{ current_user.first_name }} {{ current_user.last_name }}</strong></p>
+    </div>
+    <div class="text-end">
+        <span class="badge bg-secondary p-2">Liczba zadań: {{ tasks|length }}</span>
+    </div>
+</div>
+
+{% if not tasks %}
+    <div class="alert alert-success text-center py-5 shadow-sm">
+        <h1 class="display-4">🎉</h1>
+        <h4>Brak aktywnych zleceń!</h4>
+        <p>Wszystkie przypisane naprawy zostały zakończone. Możesz odpocząć.</p>
+    </div>
+{% else %}
+    <div class="row">
+    {% for task in tasks %}
+        <div class="col-lg-12 mb-5">
+            <div class="card shadow border-secondary">
+
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <span class="fs-5">Zlecenie <strong>#{{ task.id }}</strong></span>
+
+                    {% if task.status == 'Czeka na części' %}
+                        <span class="badge bg-warning text-dark px-3 py-2">{{ task.status }}</span>
+                    {% elif task.status == 'W trakcie diagnozy' %}
+                        <span class="badge bg-info text-dark px-3 py-2">{{ task.status }}</span>
+                    {% elif task.status == 'Gotowe' %}
+                        <span class="badge bg-success px-3 py-2">{{ task.status }}</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark px-3 py-2">{{ task.status }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+
+                        <div class="col-md-5 border-end">
+                            <h4 class="text-primary fw-bold">{{ task.vehicle.make }} {{ task.vehicle.model }}</h4>
+                            <p class="mb-1"><strong>Rejestracja:</strong> <span class="badge bg-light text-dark border">{{ task.vehicle.registration_number }}</span></p>
+                            <p class="mb-3 text-muted small">VIN: {{ task.vehicle.vin or 'Brak' }}</p>
+
+                            <div class="alert alert-light border border-primary">
+                                <small class="text-primary fw-bold">ZGŁOSZENIE KLIENTA:</small><br>
+                                <span class="fs-6">{{ task.description }}</span>
+                            </div>
+                            <div class="alert alert-warning border border-warning mt-2">
+    <small class="text-warning-emphasis fw-bold">ZLECONA USŁUGA (CENNIK):</small><br>
+    <span class="fs-6 fw-bold text-dark">
+        {% if task.services %}
+            {{ task.services[0].name }}
+        {% else %}
+            Nie wybrano usługi z cennika
+        {% endif %}
+    </span>
+</div>
+
+                            <hr>
+
+                            <h6 class="mb-2">🛠️ Zamontowane Części:</h6>
+                            <ul class="list-group list-group-flush mb-3 border rounded">
+                                {% for item in task.used_parts %}
+                                    <li class="list-group-item d-flex justify-content-between px-3 py-2">
+                                        {{ item.part.name }}
+                                        <span class="badge bg-secondary rounded-pill">x{{ item.quantity }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="list-group-item text-muted small text-center bg-light">
+                                        Brak pobranych części.
+                                    </li>
+                                {% endfor %}
+                            </ul>
+
+                            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#partsModal{{ task.id }}">
+                                📦 Magazyn Części (Pobierz / Zgłoś brak)
+                            </button>
+                        </div>
+
+                        <div class="col-md-7 ps-md-4">
+                            <form action="{{ url_for('main.mechanic_update_order', repair_id=task.id) }}" method="POST">
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-danger">📝 Notatki Mechanika / Zapotrzebowanie</label>
+                                    <textarea name="mechanic_notes" class="form-control" rows="6" placeholder="Wpisz uwagi...">{{ task.mechanic_notes or '' }}</textarea>
+                                </div>
+
+                                <div class="row align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">Aktualizuj Status Naprawy</label>
+                                        <select name="status" class="form-select border-primary form-select-lg">
+                                            <option value="Przyjęte do realizacji" {% if task.status == 'Przyjęte do realizacji' %}selected{% endif %}>🕒 Przyjęte do realizacji</option>
+                                            <option value="W trakcie diagnozy" {% if task.status == 'W trakcie diagnozy' %}selected{% endif %}>🔍 W trakcie diagnozy</option>
+                                            <option value="W trakcie naprawy" {% if task.status == 'W trakcie naprawy' %}selected{% endif %}>🔧 W trakcie naprawy</option>
+                                            <option value="Czeka na części" {% if task.status == 'Czeka na części' %}selected{% endif %}>📦 Czeka na części (STOP)</option>
+                                            <option value="Gotowe" {% if task.status == 'Gotowe' %}selected{% endif %}>✅ Gotowe (Zakończ)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-success w-100 btn-lg">💾 Zapisz</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="partsModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">Stan Magazynowy</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2">
+                            <small>Wybierz część lub zgłoś brak.</small>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Nazwa Części</th>
+                                        <th style="width: 15%;">Dostępność</th>
+                                        <th style="width: 35%;">Akcja</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for part in parts %}
+                                    <tr class="{% if part.stock_quantity == 0 %}table-danger{% endif %}">
+                                        <td>
+                                            <strong>{{ part.name }}</strong><br>
+                                            <small class="text-muted">Cena: {{ part.price }} PLN</small>
+                                        </td>
+
+                                        <td class="text-center">
+                                            {% if part.stock_quantity > 0 %}
+                                                <span class="badge bg-success rounded-pill">{{ part.stock_quantity }} szt.</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">BRAK (0)</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {% if part.stock_quantity > 0 %}
+                                                <form action="{{ url_for('main.add_part', repair_id=task.id) }}" method="POST" class="d-flex gap-2 justify-content-end">
+                                                    <input type="hidden" name="part_id" value="{{ part.id }}">
+                                                    <div class="input-group input-group-sm" style="width: 120px;">
+                                                        <span class="input-group-text">Il.</span>
+                                                        <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ part.stock_quantity }}">
+                                                    </div>
+                                                    <button type="submit" class="btn btn-sm btn-success">Pobierz</button>
+                                                </form>
+                                            {% else %}
+                                                <form action="{{ url_for('main.report_missing_part', repair_id=task.id) }}" method="POST" class="text-end">
+                                                    <input type="hidden" name="part_id" value="{{ part.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold w-100">
+                                                        ⚠️ Zgłoś brak
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %} {% endblock %}

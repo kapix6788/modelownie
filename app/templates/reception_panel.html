@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Panel Recepcji</h2>
+        <small class="text-muted">Zarządzanie wizytami i mechanikami</small>
+    </div>
+    <a href="{{ url_for('main.reception_create_order') }}" class="btn btn-success btn-lg shadow-sm">
+        + Nowe Zlecenie
+    </a>
+</div>
+
+<div class="card shadow">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID / Termin</th>
+                        <th>Klient i Pojazd</th>
+                        <th>Opis / Usługa</th>
+                        <th>Status / Mechanik</th>
+                        <th class="text-end" style="min-width: 150px;">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for repair in repairs %}
+                    <tr>
+                        <td>
+                            <strong class="text-primary">#{{ repair.id }}</strong><br>
+                            📅 {{ repair.start_date.strftime('%Y-%m-%d') }}<br>
+                            🕒 {{ repair.start_date.strftime('%H:%M') }}
+                        </td>
+
+                        <td>
+                            <strong>{{ repair.vehicle.owner.last_name }} {{ repair.vehicle.owner.first_name }}</strong><br>
+                            <span class="text-muted">{{ repair.vehicle.make }} {{ repair.vehicle.model }}</span><br>
+                            <small class="text-secondary">({{ repair.vehicle.registration_number }})</small>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info text-dark mb-1">
+                                {% if repair.services %}{{ repair.services[0].name }}{% else %}Serwis{% endif %}
+                            </span><br>
+                            <small class="text-muted" style="font-style: italic;">"{{ repair.description|truncate(40) }}"</small>
+                        </td>
+
+                        <td>
+                            {% if repair.status == 'Gotowe' %}
+                                <span class="badge bg-success">Gotowe</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">{{ repair.status }}</span>
+                            {% endif %}
+
+                            <div class="mt-1 small">
+                                {% if repair.mechanic %}
+                                    🔧 {{ repair.mechanic.first_name }} {{ repair.mechanic.last_name }}
+                                {% else %}
+                                    <span class="text-danger fw-bold">⚠ Nieprzypisany</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="text-end">
+                            <div class="btn-group">
+                                {% if repair.status == 'Gotowe' %}
+                                    <a href="{{ url_for('main.download_invoice', repair_id=repair.id) }}" class="btn btn-sm btn-outline-dark" title="Pobierz Fakturę">📄</a>
+                                {% endif %}
+
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ repair.id }}">
+                                    ✏️ Edytuj
+                                </button>
+
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ repair.id }}">
+                                    🗑️
+                                </button>
+                            </div>
+
+                            <div class="modal fade" id="editModal{{ repair.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">Edycja Zlecenia #{{ repair.id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+
+                                        <form action="{{ url_for('main.edit_repair', repair_id=repair.id) }}" method="POST">
+    <div class="modal-body text-start">
+        <div class="row">
+            <div class="col-md-6 border-end">
+                <h6 class="text-primary fw-bold">Termin i Status</h6>
+                <hr class="mt-1 mb-3">
+
+                <div class="mb-3">
+                    <label class="form-label">Data wizyty</label>
+                    <input type="date" name="date" class="form-control" value="{{ repair.start_date.strftime('%Y-%m-%d') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Godzina (8:00 - 15:00)</label>
+                    <select name="time" class="form-select" required>
+                        {% set current_time = repair.start_date.strftime('%H:%M') %}
+                        {% for hour in range(8, 16) %}
+                            {% set time_str = "%02d:00"|format(hour) %}
+                            <option value="{{ time_str }}" {% if time_str == current_time %}selected{% endif %}>
+                                {{ time_str }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Status Naprawy</label>
+                    <select name="status" class="form-select border-warning">
+                        <option value="Zgłoszone" {% if repair.status == 'Zgłoszone' %}selected{% endif %}>Zgłoszone</option>
+                        <option value="Przyjęte do realizacji" {% if repair.status == 'Przyjęte do realizacji' %}selected{% endif %}>Przyjęte do realizacji</option>
+                        <option value="W trakcie diagnozy" {% if repair.status == 'W trakcie diagnozy' %}selected{% endif %}>W trakcie diagnozy</option>
+                        <option value="Czeka na części" {% if repair.status == 'Czeka na części' %}selected{% endif %}>Czeka na części</option>
+                        <option value="Gotowe" {% if repair.status == 'Gotowe' %}selected{% endif %}>✅ Gotowe</option>
+                        <option value="Anulowane" {% if repair.status == 'Anulowane' %}selected{% endif %}>❌ Anulowane</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mechanik</label>
+                    <select name="mechanic_id" class="form-select">
+                        <option value="" {% if not repair.mechanic %}selected{% endif %}>-- W kolejce --</option>
+                        {% for mech in mechanics %}
+                            <option value="{{ mech.id }}" {% if repair.mechanic_id == mech.id %}selected{% endif %}>
+                                {{ mech.first_name }} {{ mech.last_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <h6 class="text-primary fw-bold">Szczegóły Naprawy</h6>
+                <hr class="mt-1 mb-3">
+
+                <div class="mb-3">
+                    <label class="form-label">Opis Usterki</label>
+                    <textarea name="description" class="form-control" rows="4" required>{{ repair.description }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Usługa (Cennik)</label>
+                    <select name="service_id" class="form-select">
+                        {% for s in services %}
+                            <option value="{{ s.id }}" {% if repair.services and repair.services[0].id == s.id %}selected{% endif %}>
+                                {{ s.name }} ({{ s.base_price }} PLN)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+        <button type="submit" class="btn btn-primary px-4">Zapisz Zmiany</button>
+    </div>
+</form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal fade" id="deleteModal{{ repair.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title">Potwierdź usunięcie</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body text-start">
+                                            <p>Czy na pewno chcesz usunąć rezerwację nr <strong>#{{ repair.id }}</strong>?</p>
+                                            <p class="mb-0">Pojazd: <strong>{{ repair.vehicle.registration_number }}</strong></p>
+                                            <p class="text-danger small mt-2">Tej operacji nie można cofnąć.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                                            <form action="{{ url_for('main.delete_appointment', repair_id=repair.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-danger">Tak, usuń trwale</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <h4 class="text-muted">Brak zleceń w systemie</h4>
+                            <p>Kliknij "Nowe Zlecenie", aby dodać pierwszą wizytę.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

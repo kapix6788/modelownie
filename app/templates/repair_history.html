@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Historia Napraw</h2>
+    <a href="{{ url_for('main.client_panel') }}" class="btn btn-outline-secondary">← Wróć do Panelu</a>
+</div>
+
+{% if repairs %}
+    <div class="card shadow border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Data Zakończenia</th>
+                            <th>Pojazd</th>
+                            <th>Status</th>
+                            <th class="text-end" style="min-width: 200px;">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repair in repairs %}
+                        <tr>
+                            <td>
+                                {{ repair.end_date.strftime('%Y-%m-%d') if repair.end_date else repair.start_date.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td>
+                                <strong>{{ repair.vehicle.make }} {{ repair.vehicle.model }}</strong><br>
+                                <small class="text-muted">{{ repair.vehicle.registration_number }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success rounded-pill">Zakończone</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('main.repair_details', repair_id=repair.id) }}" class="btn btn-sm btn-info text-white">
+                                        Szczegóły
+                                    </a>
+                                    <a href="{{ url_for('main.download_invoice', repair_id=repair.id) }}" class="btn btn-sm btn-warning text-dark">
+                                        Faktura
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info text-center py-5 shadow-sm">
+        <h4 class="alert-heading">Brak historii napraw</h4>
+        <p>Tutaj pojawią się Twoje zlecenia, gdy tylko mechanik zakończy nad nimi pracę.</p>
+    </div>
+{% endif %}
+{% endblock %}

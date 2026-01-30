@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 rounded-3">
+            <div class="card-header bg-success text-white text-center py-3">
+                <h3 class="mb-0">Rejestracja</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Imię</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Jan" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nazwisko</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Kowalski" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Numer Telefonu</label>
+                            <input type="text" name="phone_number" class="form-control" placeholder="np. 500 123 456" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">NIP <small class="text-muted fw-normal">(Opcjonalnie)</small></label>
+                            <input type="text" name="nip" class="form-control" placeholder="Tylko cyfry">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email (Login)</label>
+                        <input type="email" name="email" class="form-control" placeholder="jan@przyklad.pl" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Hasło</label>
+                        <input type="password" name="password" class="form-control" placeholder="Minimum 4 znaki" required>
+                    </div>
+
+                    <div class="mb-4 p-3 bg-light border rounded">
+                        <label class="form-label fw-bold text-danger">Wybierz Rolę (Tryb Testowy)</label>
+                        <select name="role" class="form-select border-danger">
+                            <option value="client" selected>Klient (Domyślne)</option>
+                            <option value="mechanic">Mechanik</option>
+                            <option value="reception">Recepcja</option>
+                            <option value="owner">Właściciel</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">Załóż konto</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3 bg-white border-top-0">
+                Masz już konto? <a href="{{ url_for('main.login') }}" class="text-success fw-bold text-decoration-none">Zaloguj się tutaj</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

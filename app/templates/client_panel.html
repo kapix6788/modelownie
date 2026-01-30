@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2>Witaj, {{ current_user.first_name }}!</h2>
+            <p class="text-muted">Panel Klienta</p>
+        </div>
+        <div>
+            <a href="{{ url_for('main.book_appointment') }}" class="btn btn-primary text-white me-2 shadow-sm">
+                📅 Umów Wizytę
+            </a>
+
+            <a href="{{ url_for('main.client_history') }}" class="btn btn-info text-white me-2 shadow-sm">
+                📜 Historia i Faktury
+            </a>
+
+            <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#addCarModal">
+                + Dodaj Pojazd
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span>Twoje Pojazdy</span>
+                <span class="badge bg-secondary">{{ current_user.vehicles|length }} aut</span>
+            </div>
+            <div class="card-body">
+                {% if current_user.vehicles %}
+                    <div class="row">
+                        {% for car in current_user.vehicles %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body position-relative">
+                                    <h5 class="card-title text-primary fw-bold">{{ car.make }} {{ car.model }}</h5>
+                                    <p class="card-text mb-1"><strong>Rejestracja:</strong> <span class="badge bg-light text-dark border">{{ car.registration_number }}</span></p>
+                                    <p class="card-text"><small class="text-muted">VIN: {{ car.vin or 'Brak' }}</small></p>
+
+                                    <form action="{{ url_for('main.client_delete_vehicle', vehicle_id=car.id) }}" method="POST" class="position-absolute top-0 end-0 m-2">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Usuń pojazd">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <h4 class="text-muted">Brak pojazdów</h4>
+                        <p>Dodaj swoje auto, aby móc umawiać wizyty.</p>
+                        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addCarModal">Dodaj teraz</button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+
+        <div class="card shadow-sm mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                🔍 Sprawdź Status Naprawy
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.client_check_status') }}" method="POST">
+                    <label class="form-label fw-bold">Numer Zlecenia</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">#</span>
+                        <input type="number" name="order_id" class="form-control" placeholder="np. 12" required>
+                        <button class="btn btn-primary" type="submit">Sprawdź</button>
+                    </div>
+                    <div class="form-text small">Wpisz numer ID ze swojego potwierdzenia lub historii.</div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Dodaj Nowy Pojazd</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.client_add_vehicle') }}" method="POST">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Marka</label>
+                            <input type="text" name="make" class="form-control" placeholder="np. Toyota" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Model</label>
+                            <input type="text" name="model" class="form-control" placeholder="np. Yaris" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Numer Rejestracyjny</label>
+                        <input type="text" name="registration_number" class="form-control" placeholder="np. WA 12345" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">VIN (Opcjonalnie)</label>
+                        <input type="text" name="vin" class="form-control" placeholder="17 znaków">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-success px-4">Zapisz Pojazd</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4">
+    <h2>Centrum Zarządzania (Właściciel)</h2>
+    <p class="text-muted">Zarządzaj firmą, personelem i finansami.</p>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="ownerTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button">📊 Raporty i Finanse</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button">👥 Pracownicy</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button">💰 Katalog Usług</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="ownerTabsContent">
+
+    <div class="tab-pane fade show active" id="reports">
+        <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('main.owner_download_report') }}" class="btn btn-danger">
+        📄 Pobierz Raport Finansowy (PDF)
+    </a>
+</div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-3 shadow">
+                    <div class="card-header">Całkowity Przychód</div>
+                    <div class="card-body">
+                        <h2 class="card-title">{{ "%.2f"|format(total_income) }} PLN</h2>
+                        <p class="card-text">Suma zakończonych zleceń (części + usługi).</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-dark bg-warning mb-3 shadow">
+                    <div class="card-header">Warsztat w ruchu</div>
+                    <div class="card-body">
+                        <h2 class="card-title">{{ active_count }}</h2>
+                        <p class="card-text">Auta aktualnie naprawiane lub oczekujące.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-info mb-3 shadow">
+                    <div class="card-header">Historia</div>
+                    <div class="card-body">
+                        <h2 class="card-title">{{ finished_count }}</h2>
+                        <p class="card-text">Liczba wszystkich zakończonych napraw.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="employees">
+        <div class="d-flex justify-content-between mb-3">
+            <h4>Lista Pracowników</h4>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">+ Dodaj Pracownika</button>
+        </div>
+        
+        <table class="table table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Imię i Nazwisko</th>
+                    <th>Email (Login)</th>
+                    <th>Rola</th>
+                    <th>Akcja</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in employees %}
+                <tr>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.role == 'mechanic' %} <span class="badge bg-warning text-dark">Mechanik</span>
+                        {% elif user.role == 'reception' %} <span class="badge bg-info text-dark">Recepcja</span>
+                        {% else %} {{ user.role }} {% endif %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('main.delete_employee', user_id=user.id) }}" method="POST" onsubmit="return confirm('Usunąć pracownika {{ user.last_name }}?');">
+                            <button class="btn btn-sm btn-danger">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="tab-pane fade" id="services">
+        <div class="d-flex justify-content-between mb-3">
+            <h4>Cennik Usług</h4>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">+ Nowa Usługa</button>
+        </div>
+
+        <table class="table table-hover align-middle">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Nazwa Usługi</th>
+                    <th>Cena Bazowa (PLN)</th>
+                    <th>Zarządzanie</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for service in services %}
+                <tr>
+                    <td>{{ service.name }}</td>
+                    <td class="fw-bold text-success">{{ service.base_price }} PLN</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editServiceModal{{ service.id }}">Edytuj</button>
+                            <form action="{{ url_for('main.delete_service', service_id=service.id) }}" method="POST" onsubmit="return confirm('Usunąć usługę?');" style="display:inline;">
+                                <button class="btn btn-sm btn-outline-danger ms-1">X</button>
+                            </form>
+                        </div>
+
+                        <div class="modal fade" id="editServiceModal{{ service.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edytuj Usługę</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form action="{{ url_for('main.edit_service', service_id=service.id) }}" method="POST">
+                                        <div class="modal-body">
+                                            <label>Nazwa</label>
+                                            <input type="text" name="name" class="form-control mb-2" value="{{ service.name }}" required>
+                                            <label>Cena (PLN)</label>
+                                            <input type="number" step="0.01" name="price" class="form-control" value="{{ service.base_price }}" required>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Zapisz</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Nowy Pracownik</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.add_employee') }}" method="POST">
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <div class="col"><input type="text" name="first_name" class="form-control" placeholder="Imię" required></div>
+                        <div class="col"><input type="text" name="last_name" class="form-control" placeholder="Nazwisko" required></div>
+                    </div>
+                    <input type="email" name="email" class="form-control mb-2" placeholder="Email (Login)" required>
+                    <input type="password" name="password" class="form-control mb-2" placeholder="Hasło startowe" required>
+                    
+                    <label>Stanowisko:</label>
+                    <select name="role" class="form-select">
+                        <option value="mechanic">Mechanik</option>
+                        <option value="reception">Recepcja</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Utwórz konto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addServiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Nowa Usługa do Cennika</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.add_service') }}" method="POST">
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control mb-3" placeholder="Nazwa usługi (np. Wymiana Oleju)" required>
+                    <input type="number" step="0.01" name="price" class="form-control" placeholder="Cena bazowa (PLN)" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Dodaj do katalogu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

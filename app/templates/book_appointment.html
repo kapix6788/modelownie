@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📅 Umów Wizytę Online</h4>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.book_appointment') }}" method="POST">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Wybierz swój pojazd</label>
+                        <select name="vehicle_id" class="form-select" required>
+                            {% for car in vehicles %}
+                                <option value="{{ car.id }}">{{ car.make }} {{ car.model }} ({{ car.registration_number }})</option>
+                            {% else %}
+                                <option disabled>Brak pojazdów. Dodaj auto w panelu głównym.</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Wybierz usługę</label>
+                        <select name="service_id" class="form-select" required>
+                            <option value="" selected disabled>-- Wybierz z listy --</option>
+                            {% for s in services %}
+                                <option value="{{ s.id }}">{{ s.name }} (ok. {{ s.base_price }} PLN)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Data</label>
+                            <input type="date" name="date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Godzina</label>
+                            <select name="time" class="form-select" required>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_notes" class="form-label">Dodatkowe uwagi / Opis usterki (Opcjonalnie)</label>
+                        <textarea class="form-control" id="client_notes" name="client_notes" rows="3" placeholder="np. Słychać stukanie przy hamowaniu..."></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">Potwierdź Rezerwację</button>
+                        <a href="{{ url_for('main.client_panel') }}" class="btn btn-outline-secondary">Anuluj</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

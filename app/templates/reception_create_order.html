@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-lg">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Nowe Zlecenie Naprawy</h4>
+                <small>Tryb Recepcji</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-primary text-white fw-bold">
+                            Krok 1: Identyfikacja Klienta i Pojazdu
+                        </div>
+                        <div class="card-body bg-light">
+                            <div class="mb-3">
+                                <label class="form-label">Wyszukaj (Telefon / Nazwisko / Rejestracja)</label>
+                                <input type="text" id="searchInput" class="form-control mb-2" placeholder="Wpisz np. numer telefonu..." onkeyup="filterVehicles()">
+
+                                <label class="form-label fw-bold">Wybierz Pojazd z listy:</label>
+                                <div class="d-flex gap-2">
+                                    <select name="vehicle_id" id="vehicleSelect" class="form-select" size="5" required>
+                                        {% for car in vehicles %}
+                                            <option value="{{ car.id }}">
+                                                [Tel: {{ car.owner.phone_number }}] {{ car.owner.last_name }} {{ car.owner.first_name }} - {{ car.make }} {{ car.model }} ({{ car.registration_number }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <button type="button" class="btn btn-success d-flex align-items-center justify-content-center" style="width: 50px;" data-bs-toggle="modal" data-bs-target="#addVehicleModal" title="Dodaj nowy pojazd dla klienta">
+                                        <span style="font-size: 24px; font-weight: bold;">+</span>
+                                    </button>
+                                </div>
+                                <div class="form-text text-end">
+                                    <small>Użyj plusa, aby dodać auto. Jeśli nie ma klienta, najpierw <a href="{{ url_for('main.register') }}">załóż mu konto</a>.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Krok 2: Opis usterki (zgłoszenie klienta)</label>
+                                <textarea name="description" class="form-control" rows="5" placeholder="Np. słychać stuki w zawieszeniu przy skręcaniu..." required></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Wstępna usługa (Katalog)</label>
+                                <select name="service_id" class="form-select" required>
+                                    {% for s in services %}
+                                        <option value="{{ s.id }}">{{ s.name }} (bazowo: {{ s.base_price }} PLN)</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Krok 3: Przypisz Mechanika</label>
+                                <select name="mechanic_id" class="form-select border-warning">
+                                    <option value="" selected>-- Pozostaw w kolejce (bez przypisania) --</option>
+                                    {% for mech in mechanics %}
+                                        <option value="{{ mech.id }}">🔧 {{ mech.first_name }} {{ mech.last_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Możesz przypisać mechanika później w panelu głównym.</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col">
+                                    <label>Data przyjęcia</label>
+                                    <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                                <div class="col">
+                                    <label>Godzina</label>
+                                    <select name="time" class="form-select" required>
+    {% for hour in range(8, 16) %}
+        <option value="{{ '%02d'|format(hour) }}:00">{{ '%02d'|format(hour) }}:00</option>
+    {% endfor %}
+</select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            💾 Zapisz i wydrukuj potwierdzenie
+                        </button>
+                        <a href="{{ url_for('main.reception_panel') }}" class="btn btn-outline-secondary">Anuluj</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addVehicleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Szybkie dodawanie pojazdu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form action="{{ url_for('main.quick_add_vehicle') }}" method="POST">
+          <div class="modal-body">
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Właściciel pojazdu</label>
+                <select name="owner_id" class="form-select" required>
+                    <option value="" disabled selected>-- Wybierz klienta --</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}">{{ client.last_name }} {{ client.first_name }} ({{ client.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label">Marka</label>
+                    <input type="text" name="make" class="form-control" placeholder="np. Audi" required>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label">Model</label>
+                    <input type="text" name="model" class="form-control" placeholder="np. A4" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Numer Rejestracyjny</label>
+                <input type="text" name="registration_number" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">VIN (Opcjonalnie)</label>
+                <input type="text" name="vin" class="form-control">
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+            <button type="submit" class="btn btn-success">Dodaj auto i wróć</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterVehicles() {
+    var input, filter, select, options, i, txtValue;
+    input = document.getElementById("searchInput");
+    filter = input.value.toUpperCase();
+    select = document.getElementById("vehicleSelect");
+    options = select.getElementsByTagName("option");
+
+    for (i = 0; i < options.length; i++) {
+        txtValue = options[i].textContent || options[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            options[i].style.display = "";
+        } else {
+            options[i].style.display = "none";
+        }
+    }
+}
+</script>
+{% endblock %}

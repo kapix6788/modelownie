@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Szczegóły Zlecenia #{{ repair.id }}</h2>
+        <a href="{{ url_for('main.client_history') }}" class="btn btn-outline-secondary">← Wróć do listy</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Pojazd i Zgłoszenie</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-primary">{{ repair.vehicle.make }} {{ repair.vehicle.model }}</h3>
+                    <p class="mb-3">
+                        <span class="badge bg-light text-dark border">{{ repair.vehicle.registration_number }}</span>
+                        <span class="text-muted ms-2">VIN: {{ repair.vehicle.vin or '---' }}</span>
+                    </p>
+
+                    <h6 class="fw-bold mt-4">Twoje zgłoszenie:</h6>
+                    <div class="alert alert-light border">
+                        {{ repair.description }}
+                    </div>
+
+                    <h6 class="fw-bold mt-3 text-danger">📝 Raport Mechanika:</h6>
+                    <div class="alert alert-secondary">
+                        {% if repair.mechanic_notes %}
+                            {{ repair.mechanic_notes|replace('\n', '<br>')|safe }}
+                        {% else %}
+                            <em class="text-muted">Brak dodatkowych uwag ze strony serwisu.</em>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Rozliczenie Naprawy</h5>
+                </div>
+                <div class="card-body">
+
+                    <h6 class="fw-bold">🔧 Wykonane Usługi:</h6>
+                    <ul class="list-group mb-3">
+                        {% for service in repair.services %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ service.name }}
+                            <span>{{ "%.2f"|format(service.base_price) }} PLN</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <h6 class="fw-bold">⚙️ Zużyte Części:</h6>
+                    <ul class="list-group mb-4">
+                        {% for item in repair.used_parts %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ item.part.name }} <small class="text-muted">(x{{ item.quantity }})</small>
+                            </div>
+                            <span>{{ "%.2f"|format(item.part.price * item.quantity) }} PLN</span>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-muted small">Brak części.</li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4>Łączny koszt:</h4>
+                        <h3 class="text-success fw-bold">{{ "%.2f"|format(total_cost) }} PLN</h3>
+                    </div>
+
+                    <div class="d-grid">
+                        <a href="{{ url_for('main.download_invoice', repair_id=repair.id) }}" class="
