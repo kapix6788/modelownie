@@ -9,7 +9,6 @@ from .models import User, Vehicle, RepairOrder, db, Service, Part, RepairPart
 
 bp = Blueprint('main', __name__)
 
-#POMOCNICZE
 def validate_nip(nip_str):
     if not nip_str: return False
     nip = nip_str.replace('-', '').strip()
@@ -19,9 +18,6 @@ def validate_nip(nip_str):
     checksum = sum(int(nip[i]) * weights[i] for i in range(9))
     return (checksum % 11) == int(nip[9])
 
-
-
-#AUTORYZACJA I START
 @bp.route('/')
 def index():
     return redirect(url_for('main.login'))
@@ -114,9 +110,7 @@ def dashboard():
     else:
         return "Nieznana rola użytkownika", 403
 
-# ==============================================================================
-#                            STREFA KLIENTA
-# ==============================================================================
+#KLIENT
 
 @bp.route('/panel/client')
 @login_required
@@ -329,10 +323,7 @@ def download_invoice(repair_id):
     response.headers['Content-Disposition'] = f'attachment; filename=faktura_{repair.id}.pdf'
     return response
 
-
-# ==============================================================================
-#                            STREFA RECEPCJI
-# ==============================================================================
+#RECEPCJA
 
 @bp.route('/panel/reception')
 @login_required
@@ -466,9 +457,9 @@ def edit_repair(repair_id):
     return redirect(url_for('main.reception_panel'))
 
 
-# ==============================================================================
-#                            STREFA MECHANIKA
-# ==============================================================================
+
+#MECHANIK
+
 
 @bp.route('/panel/mechanic')
 @login_required
@@ -543,16 +534,14 @@ def complete_repair(repair_id):
     return redirect(url_for('main.mechanic_panel'))
 
 
-# ==============================================================================
-#                            STREFA WŁAŚCICIELA
-# ==============================================================================
+
+#WŁAŚCICIEL
 
 @bp.route('/panel/owner')
 @login_required
 def owner_panel():
     if current_user.role != 'owner': return redirect(url_for('main.dashboard'))
 
-    # Obliczanie finansów
     all_finished = RepairOrder.query.filter_by(status='Gotowe').all()
     total_income = 0
     for repair in all_finished:
@@ -575,7 +564,6 @@ def add_employee():
     if User.query.filter_by(email=email).first():
         flash('Taki email już istnieje!', 'error')
     else:
-        # POPRAWKA: Ujednolicone haszowanie (bez method='sha256')
         hashed_pw = generate_password_hash(request.form.get('password'))
         new_emp = User(
             email=email, password=hashed_pw,
@@ -688,10 +676,6 @@ def owner_download_report():
     response.headers['Content-Disposition'] = f'attachment; filename=Raport_{current_date}.pdf'
     return response
 
-
-# ==============================================================================
-#                            INICJALIZACJA SYSTEMU
-# ==============================================================================
 
 @bp.route('/init_services')
 def init_services():

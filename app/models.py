@@ -2,8 +2,6 @@ from . import db
 from flask_login import UserMixin
 from sqlalchemy.sql import func
 
-
-# TABELE ASOCJACYJNE
 repair_services = db.Table('repair_services',
                            db.Column('repair_id', db.Integer, db.ForeignKey('repair_order.id'), primary_key=True),
                            db.Column('service_id', db.Integer, db.ForeignKey('service.id'), primary_key=True)
